@@ -39,16 +39,20 @@ public class EmployeeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Employee> update(@PathVariable Integer id,
-                                           @RequestBody Employee request) {
-        var employee =
-                employeeRepository.findById(id).orElseThrow(RuntimeException::new);
+            @RequestBody Employee request) {
+        var employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
         employee.setUsername(request.getUsername());
         employee.setPassword(request.getPassword());
         employee.setFirstName(request.getFirstName());
         employee.setLastName(request.getLastName());
         employee.setNid(request.getNid());
         employee.setRole(request.getRole());
-        employee = employeeRepository.save(request);
+
+        
+
+        employee = employeeRepository.save(employee);
 
         return ResponseEntity.ok(employee);
     }

@@ -12,8 +12,7 @@ public class Absence extends Base {
     @Column(nullable = false)
     private String reason;
 
-    @Column(nullable = false)
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private PermissionStatus permissionStatus;
 

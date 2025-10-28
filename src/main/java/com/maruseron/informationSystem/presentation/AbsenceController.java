@@ -10,6 +10,8 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
 
+@RestController
+@RequestMapping("absence")
 public class AbsenceController {
     private final AbsenceRepository absenceRepository;
 
