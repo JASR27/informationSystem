@@ -16,28 +16,30 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class CurrencyConversionService {
-    record ExchangeRate(String fuente, String nombre, double compra, double venta,
-                        double promedio, String fechaActualizacion) {}
+public final class CurrencyConversionService {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    record ExchangeRate(
+            String fuente,
+            String nombre,
+            double compra,
+            double venta,
+            double promedio,
+            String fechaActualizacion
+    ) {}
 
     static CompletableFuture<BigDecimal> VED_PER_USD_RATE = HttpClient
             .newHttpClient()
             .sendAsync(
-                    HttpRequest
-                            .newBuilder()
+                    HttpRequest.newBuilder()
                             .uri(URI.create("https://ve.dolarapi.com/v1/dolares"))
                             .GET()
                             .build(),
                     HttpResponse
                             .BodyHandlers
                             .ofString())
-            .thenApply(response -> {
-                try {
-                    return new ObjectMapper().readValue(response.body(), ExchangeRate.class);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            })
+            .thenApply(response ->
+                    readValueUnchecked(response.body(), ExchangeRate.class))
             .thenApply(ExchangeRate::promedio)
             .thenApply(BigDecimal::new);
 
@@ -71,5 +73,13 @@ public class CurrencyConversionService {
 
     public BigDecimal vedToUsd(BigDecimal ved) {
         return ved.divide(VED_PER_USD_RATE.join(), 2, RoundingMode.HALF_UP);
+    }
+
+    private static <T> T readValueUnchecked(String json, Class<T> valueType) {
+        try {
+            return objectMapper.readValue(json, valueType);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing JSON: " + e.getMessage(), e);
+        }
     }
 }

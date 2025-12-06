@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -49,6 +50,8 @@ public class TransactionItemService implements
                 switch (spec.transactionType()) {
                     case SALE, DEVOLUTION -> product.getSellingPrice();
                     case PURCHASE         -> product.getBuyingPrice();
+                    case ADJUSTMENT       -> BigDecimal.ZERO;
+                                          // ^ no associated value for adjustments
                 });
     }
 

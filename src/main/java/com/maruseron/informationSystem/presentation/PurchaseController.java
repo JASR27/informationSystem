@@ -43,7 +43,8 @@ public class PurchaseController implements
     }
 
     @Override
-    public ResponseEntity<?> create(PurchaseDTO.Create req) throws URISyntaxException {
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody PurchaseDTO.Create req) throws URISyntaxException {
         record Zip(List<PurchaseDTO.StockDescriptor> descriptors, Either<PurchaseDTO.Read, HttpResult> result) {}
         return Controllers.handleResult(
                 // purchase pre-validation to avoid cases where the creation of items would be

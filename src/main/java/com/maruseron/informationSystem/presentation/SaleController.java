@@ -46,7 +46,8 @@ public class SaleController
     }
 
     @Override
-    public ResponseEntity<?> create(SaleDTO.Create request) throws URISyntaxException {
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody SaleDTO.Create request) throws URISyntaxException {
         return Controllers.handleResult(
                 service().create(request).flatMap(read -> {
                     transactionItemService.bulkCreate(

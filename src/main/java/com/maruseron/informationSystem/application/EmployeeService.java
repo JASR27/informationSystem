@@ -1,5 +1,6 @@
 package com.maruseron.informationSystem.application;
 
+import com.maruseron.informationSystem.application.dto.AuthDTO;
 import com.maruseron.informationSystem.domain.entity.Employee;
 import com.maruseron.informationSystem.domain.enumeration.Role;
 import com.maruseron.informationSystem.application.dto.EmployeeDTO;
@@ -33,7 +34,6 @@ public class EmployeeService implements
         return EmployeeDTO.fromEmployee(entity);
     }
 
-    // TODO: password should be hashed, not stored directly
     @Override
     public Either<EmployeeDTO.Create, HttpResult> validateForCreation(
             final EmployeeDTO.Create request) {
@@ -68,5 +68,23 @@ public class EmployeeService implements
         employee.setLastName(request.lastName());
         employee.setRole(Role.valueOf(request.role().toUpperCase()));
         return Either.left(employee);
+    }
+
+    public Either<Object, HttpResult> auth(final AuthDTO request) {
+        if (!repository().existsByUsername(request.username()))
+            return Either.right(new HttpResult(
+                    HttpStatus.CONFLICT,
+                    "Nombre de usuario inexistente."));
+
+        final var employee = repository
+                .findByUsername(request.username())
+                .orElseThrow();
+
+        if (!employee.getPassword().equals(request.password()))
+            return Either.right(new HttpResult(
+                    HttpStatus.CONFLICT,
+                    "Contraseña incorrecta."));
+
+        return Either.left(request);
     }
 }

@@ -3,7 +3,6 @@
 | entity              | creatable | readable | updatable | deletable |
 |:--------------------|-----------|----------|-----------|-----------|
 | absence             | Y         | Y        | Y         | N         |
-| attendance          | Y         | Y        | N         | N         |
 | brand               | Y         | Y        | N         | N         |
 | client              | Y         | Y        | Y         | N         |
 | devolution          | Y         | Y        | N         | N         |
@@ -16,13 +15,11 @@
 | supplier            | Y         | Y        | N         | N         |
 | transaction         | N         | Y        | N         | N         |
 | transaction_detail* | N         | N        | N         | N         |
-| user                | Y         | Y        | Y         | N         |
 ### Table of contents
 | Entities                             |
 |:-------------------------------------|
 | [Base Entity](#entity-base)          |
 | [Absence](#entity-absence)           |
-| [Attendance](#entity-attendance)     |
 | [Brand](#entity-brand)               |
 | [Client](#entity-client)             |
 | [Employee](#entity-employee)         |
@@ -76,31 +73,6 @@ Absence update {
     permissionStatus: String s { s == ( "APPROVED" | "REJECTED" ) }
     authorizerId: Int
 }
-```
-### Entity: Attendance
-**NOTE**: This entity is very likely to be removed.
-```puml
-Attendance is Entity {
-    startTime: Instant
-    duration: Int
-    employee: Employee
-}
-
-Attendance create {
-    startTime: Long
-    duration
-    employeeId: Int
-}
-
-Attendance read {
-    id
-    createdAt: Long
-    startTime: Long
-    duration
-    employee: read of Employee
-}
-
-Attendance update { disabled }
 ```
 ### Entity: Brand
 ```puml
@@ -337,6 +309,27 @@ TransactionItem read {
 
 TransactionItem update { disabled }
 ```
+````puml
+Adjustment is Transaction {
+    reason: String
+}
+
+Adjustment create {
+    employeeId: Int
+    items: List[create of TransactionItem]
+    reason: String
+}
+
+Adjustment read {
+    id
+    createdAt: Long
+    employee: read of Employee
+    items: List[read of TransactionItem]
+    reason
+}
+
+Adjustment update { disabled }
+````
 ```puml
 Sale is Transaction {
     payments: List[Payment]
