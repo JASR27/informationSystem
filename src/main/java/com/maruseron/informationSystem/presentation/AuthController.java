@@ -19,7 +19,8 @@ public class AuthController {
 
     @PostMapping
     public ResponseEntity<?> auth(@RequestBody AuthDTO request) {
-        return Controllers.handleResult(employeeService.auth(request),
-                r -> ResponseEntity.ok().build());
+        return Controllers.handleResult(
+                employeeService.auth(request),
+                ResponseEntity::ok);
     }
 }
