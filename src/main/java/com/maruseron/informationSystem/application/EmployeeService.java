@@ -70,7 +70,7 @@ public class EmployeeService implements
         return Either.left(employee);
     }
 
-    public Either<String, HttpResult> auth(final AuthDTO request) {
+    public Either<EmployeeDTO.Read, HttpResult> auth(final AuthDTO request) {
         if (!repository().existsByUsername(request.username()))
             return Either.right(new HttpResult(
                     HttpStatus.CONFLICT,
@@ -85,6 +85,6 @@ public class EmployeeService implements
                     HttpStatus.CONFLICT,
                     "Contraseña incorrecta."));
 
-        return Either.left(Integer.toString(employee.getId()));
+        return Either.left(toDTO(employee));
     }
 }

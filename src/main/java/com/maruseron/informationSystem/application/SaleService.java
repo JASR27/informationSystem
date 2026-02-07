@@ -84,13 +84,13 @@ public class SaleService
                     HttpStatus.CONFLICT,
                     "La lista de pagos está vacía."));
 
-        final var allProductDetailsValid = request
+        final var someProductIsInvalid = request
                 .items()
                 .stream()
                 .map(TransactionItemDTO.Create::productDetailId)
                 .anyMatch(not(productDetailRepository::existsById));
 
-        if (allProductDetailsValid)
+        if (someProductIsInvalid)
             return Either.right(new HttpResult(
                     HttpStatus.CONFLICT,
                     "Uno o más de los productos indicados no existen."));

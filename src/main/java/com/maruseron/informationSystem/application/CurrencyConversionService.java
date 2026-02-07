@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public final class CurrencyConversionService {
+    private static final int SCALE = 2;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     record ExchangeRate(
@@ -41,7 +42,8 @@ public final class CurrencyConversionService {
             .thenApply(response ->
                     readValueUnchecked(response.body(), ExchangeRate.class))
             .thenApply(ExchangeRate::promedio)
-            .thenApply(BigDecimal::new);
+            .thenApply(BigDecimal::new)
+            .thenApply(n -> n.setScale(SCALE, RoundingMode.HALF_EVEN));
 
     public String exchangeRate() {
         return VED_PER_USD_RATE.join().toString();
@@ -49,7 +51,7 @@ public final class CurrencyConversionService {
 
     public Either<BigDecimal, HttpResult> usdToVed(String usd) {
         try {
-            return Either.left(usdToVed(new BigDecimal(usd)));
+            return Either.left(usdToVed(new BigDecimal(usd)).setScale(SCALE, RoundingMode.HALF_EVEN));
         } catch (NumberFormatException _) {
             return Either.right(new HttpResult(
                     HttpStatus.BAD_REQUEST,
@@ -58,12 +60,12 @@ public final class CurrencyConversionService {
     }
 
     public BigDecimal usdToVed(BigDecimal usd) {
-        return usd.multiply(VED_PER_USD_RATE.join());
+        return usd.multiply(VED_PER_USD_RATE.join()).setScale(SCALE, RoundingMode.HALF_EVEN);
     }
 
     public Either<BigDecimal, HttpResult> vedToUsd(String ved) {
         try {
-            return Either.left(vedToUsd(new BigDecimal(ved)));
+            return Either.left(vedToUsd(new BigDecimal(ved)).setScale(SCALE, RoundingMode.HALF_EVEN));
         } catch (NumberFormatException _) {
             return Either.right(new HttpResult(
                     HttpStatus.BAD_REQUEST,
@@ -72,7 +74,7 @@ public final class CurrencyConversionService {
     }
 
     public BigDecimal vedToUsd(BigDecimal ved) {
-        return ved.divide(VED_PER_USD_RATE.join(), 2, RoundingMode.HALF_UP);
+        return ved.divide(VED_PER_USD_RATE.join(), SCALE, RoundingMode.HALF_EVEN);
     }
 
     private static <T> T readValueUnchecked(String json, Class<T> valueType) {
