@@ -2,7 +2,6 @@ package com.maruseron.informationSystem.presentation;
 
 import com.maruseron.informationSystem.application.*;
 import com.maruseron.informationSystem.application.dto.AdjustmentDTO;
-import com.maruseron.informationSystem.application.dto.DevolutionDTO;
 import com.maruseron.informationSystem.application.dto.TransactionItemDTO;
 import com.maruseron.informationSystem.domain.entity.Adjustment;
 import com.maruseron.informationSystem.domain.enumeration.TransactionType;
