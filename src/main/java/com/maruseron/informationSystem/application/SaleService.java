@@ -90,7 +90,7 @@ public class SaleService
                 .map(TransactionItemDTO.Create::productDetailId)
                 .anyMatch(not(productDetailRepository::existsById));
 
-        if (!allProductDetailsValid)
+        if (allProductDetailsValid)
             return Either.right(new HttpResult(
                     HttpStatus.CONFLICT,
                     "Uno o más de los productos indicados no existen."));

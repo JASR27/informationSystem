@@ -32,7 +32,7 @@ public final class CurrencyConversionService {
             .newHttpClient()
             .sendAsync(
                     HttpRequest.newBuilder()
-                            .uri(URI.create("https://ve.dolarapi.com/v1/dolares"))
+                            .uri(URI.create("https://ve.dolarapi.com/v1/dolares/oficial"))
                             .GET()
                             .build(),
                     HttpResponse

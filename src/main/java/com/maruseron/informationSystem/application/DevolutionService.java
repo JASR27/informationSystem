@@ -20,123 +20,80 @@ import static java.util.function.Predicate.not;
 
 @Service
 public class DevolutionService implements
-    CreateService<Devolution, DevolutionDTO.Create, DevolutionDTO.Read, DevolutionRepository>
-{
-    @Autowired
-    DevolutionRepository repository;
+                CreateService<Devolution, DevolutionDTO.Create, DevolutionDTO.Read, DevolutionRepository> {
+        @Autowired
+        DevolutionRepository repository;
+        @Autowired
+        EmployeeRepository employeeRepository;
+        @Autowired
+        ClientRepository clientRepository;
+        @Autowired
+        SaleRepository saleRepository;
+        @Autowired
+        ProductDetailRepository productDetailRepository;
 
-    @Autowired
-    EmployeeRepository employeeRepository;
+        @Override
+        public DevolutionRepository repository() {
+                return repository;
+        }
 
-    @Autowired
-    ClientRepository clientRepository;
+        @Override
+        public Devolution fromDTO(DevolutionDTO.Create spec) {
+                return DevolutionDTO.createDevolution(
+                                employeeRepository.findById(spec.employeeId()).orElseThrow(),
+                                null, // Los items suelen procesarse después o mediante la lógica de persistencia
+                                clientRepository.findById(spec.clientId()).orElseThrow(),
+                                saleRepository.findById(spec.saleId()).orElseThrow());
+        }
 
-    @Autowired
-    SaleRepository saleRepository;
+        @Override
+        public DevolutionDTO.Read toDTO(Devolution entity) {
+                return DevolutionDTO.fromDevolution(entity);
+        }
 
-    @Autowired
-    ProductDetailRepository productDetailRepository;
+        @Override
+        public Either<DevolutionDTO.Create, HttpResult> validateForCreation(DevolutionDTO.Create request) {
+                // 1. Validar existencia básica
+                if (!employeeRepository.existsById(request.employeeId()))
+                        return Either.right(new HttpResult(HttpStatus.NOT_FOUND, "El empleado indicado no existe."));
 
-    @Override
-    public DevolutionRepository repository() {
-        return repository;
-    }
+                if (!clientRepository.existsById(request.clientId()))
+                        return Either.right(new HttpResult(HttpStatus.NOT_FOUND, "El cliente indicado no existe."));
 
-    @Override
-    public Devolution fromDTO(DevolutionDTO.Create spec) {
-        return DevolutionDTO.createDevolution(
-                // validateForCreation ensures these calls are safe
-                employeeRepository.findById(spec.employeeId()).orElseThrow(),
-                null,
-                clientRepository.findById(spec.clientId()).orElseThrow(),
-                saleRepository.findById(spec.saleId()).orElseThrow());
-    }
+                // 2. Validar Venta y pertenencia al cliente
+                var saleOpt = saleRepository.findById(request.saleId());
+                if (saleOpt.isEmpty())
+                        return Either.right(new HttpResult(HttpStatus.NOT_FOUND, "La venta indicada no existe."));
 
-    @Override
-    public DevolutionDTO.Read toDTO(Devolution entity) {
-        return DevolutionDTO.fromDevolution(entity);
-    }
+                Sale sale = saleOpt.get();
+                if (sale.getClient().getId() != request.clientId())
+                        return Either.right(new HttpResult(HttpStatus.CONFLICT,
+                                        "El cliente no coincide con el dueño de la venta original."));
 
-    @Override
-    public Either<DevolutionDTO.Create, HttpResult> validateForCreation(DevolutionDTO.Create request) {
-        if (!employeeRepository.existsById(request.employeeId()))
-            return Either.right(new HttpResult(
-                    HttpStatus.NOT_FOUND,
-                    "El empleado indicado no existe."));
+                // 3. Validar items
+                if (request.items() == null || request.items().isEmpty())
+                        return Either.right(new HttpResult(HttpStatus.CONFLICT, "La lista de artículos está vacía."));
 
-        if (!clientRepository.existsById(request.clientId()))
-            return Either.right(new HttpResult(
-                    HttpStatus.NOT_FOUND,
-                    "El cliente indicado no existe."));
+                final var productDetailsInSale = sale.getItems().stream()
+                                .collect(Collectors.toMap(item -> item.getProductDetail().getId(),
+                                                TransactionItem::getQuantity));
 
-        if (!saleRepository.existsById(request.clientId()))
-            return Either.right(new HttpResult(
-                    HttpStatus.NOT_FOUND,
-                    "La venta indicada no existe."));
+                for (var itemRequest : request.items()) {
+                        if (!productDetailRepository.existsById(itemRequest.productDetailId()))
+                                return Either.right(new HttpResult(HttpStatus.NOT_FOUND,
+                                                "Producto ID " + itemRequest.productDetailId() + " no existe."));
 
-        final var isSameClient = clientRepository
-                .findById(request.clientId())
-                .orElseThrow()
-                .getId() == request.clientId();
+                        Integer quantityInSale = productDetailsInSale.get(itemRequest.productDetailId());
+                        if (quantityInSale == null)
+                                return Either.right(new HttpResult(HttpStatus.CONFLICT, "El producto "
+                                                + itemRequest.productDetailId() + " no pertenece a la venta."));
 
-        if (!isSameClient)
-            return Either.right(new HttpResult(
-                    HttpStatus.CONFLICT,
-                    "El cliente de la transacción actual no coincide con el de la venta " +
-                            "referenciada."));
+                        if (itemRequest.quantity() > quantityInSale)
+                                return Either.right(new HttpResult(HttpStatus.CONFLICT,
+                                                "Cantidad a devolver excede la compra original para el producto "
+                                                                + itemRequest.productDetailId()));
+                }
 
-        if (request.items().isEmpty())
-            return Either.right(new HttpResult(
-                    HttpStatus.CONFLICT,
-                    "La lista de artículos está vacía."));
-
-        final var someDetailInvalid = request
-                .items()
-                .stream()
-                .map(TransactionItemDTO.Create::productDetailId)
-                .anyMatch(not(productDetailRepository::existsById));
-
-        if (someDetailInvalid)
-            return Either.right(new HttpResult(
-                    HttpStatus.CONFLICT,
-                    "Uno o más de los productos indicados no existen."));
-
-        final var sale = saleRepository.findById(request.saleId()).orElseThrow();
-
-        final var productDetailsInSale = sale
-                .getItems()
-                .stream()
-                .map(TransactionItem::getProductDetail)
-                .map(ProductDetail::getId)
-                .collect(Collectors.toUnmodifiableSet());
-
-        final Predicate<TransactionItemDTO.Create> variantInSale =
-                item -> productDetailsInSale.contains(item.productDetailId());
-        final Predicate<TransactionItemDTO.Create> enoughItems =
-                item -> item.quantity() <= getVariantQuantityInSale(sale, item.productDetailId());
-
-        final var allNotInSaleOrNotEnough = request
-                .items()
-                .stream()
-                .anyMatch(not(variantInSale.and(enoughItems)));
-
-        if (allNotInSaleOrNotEnough)
-            return Either.right(new HttpResult(
-                    HttpStatus.CONFLICT,
-                    "Uno o más de los productos indicados no se encuentran en la venta, o se " +
-                            "están intentando devolver más productos de los originalmente " +
-                            "comprados."));
-
-        return Either.left(request);
-    }
-
-    static int getVariantQuantityInSale(Sale sale, int id) {
-        return sale
-                .getItems()
-                .stream()
-                .filter(item -> id == item.getProductDetail().getId())
-                .findFirst()
-                .orElseThrow()
-                .getQuantity();
-    }
+                return Either.left(request);
+        }
 }
