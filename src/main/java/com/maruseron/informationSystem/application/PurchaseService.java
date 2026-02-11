@@ -34,6 +34,7 @@ public class PurchaseService implements
         return PurchaseDTO.createPurchase(
                 employeeRepository.findById(spec.employeeId()).orElseThrow(),
                 null,
+                spec.bill(),
                 supplierRepository.findById(spec.supplierId()).orElseThrow());
     }
 

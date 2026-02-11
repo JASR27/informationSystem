@@ -9,12 +9,13 @@ public final class PurchaseDTO {
     private PurchaseDTO() {}
 
     public static Purchase createPurchase(Employee employee, List<TransactionItem> items,
-                                          Supplier supplier) {
+                                          String bill, Supplier supplier) {
         return new Purchase(
                 0,
                 Instant.now(),
                 employee,
                 items,
+                bill,
                 supplier);
     }
 
@@ -25,10 +26,12 @@ public final class PurchaseDTO {
                 EmployeeDTO.fromEmployee(entity.getEmployee()),
                 entity.getItems() == null ? null :
                         entity.getItems().stream().map(TransactionItemDTO::fromTransactionItem).toList(),
+                entity.getBill(),
                 SupplierDTO.fromSupplier(entity.getSupplier()));
     }
 
-    public record StockInputDescriptor(int productId, String sku, int size, String color, int quantity) {
+    public record StockInputDescriptor(int productId, String sku, int size, String color,
+                                       int quantity) {
         public ProductDetailDTO.Create toProductDetailSpec() {
             return new ProductDetailDTO.Create(productId(), sku(), quantity(), size(), color());
         }
@@ -36,10 +39,11 @@ public final class PurchaseDTO {
 
     public record StockDescriptor(int productDetailId, int quantity, boolean isUpdating) {}
 
-    public record Create(int employeeId, List<StockInputDescriptor> items, int supplierId)
+    public record Create(int employeeId, List<StockInputDescriptor> items, String bill,
+                         int supplierId)
             implements DtoTypes.CreateDto<Purchase> {}
 
     public record Read(int id, long createdAt, EmployeeDTO.Read employee,
-                       List<TransactionItemDTO.Read> items, SupplierDTO.Read supplier)
+                       List<TransactionItemDTO.Read> items, String bill, SupplierDTO.Read supplier)
             implements DtoTypes.ReadDto<Purchase> {}
 }

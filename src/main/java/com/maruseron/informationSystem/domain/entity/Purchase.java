@@ -1,6 +1,7 @@
 package com.maruseron.informationSystem.domain.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
@@ -10,15 +11,27 @@ import java.util.Objects;
 
 @Entity
 public final class Purchase extends Transaction {
+    @Column(name = "bill", nullable = false)
+    private String bill;
+
     @ManyToOne(cascade = CascadeType.ALL)
     private Supplier supplier;
 
     public Purchase() {}
 
-    public Purchase(int id, Instant createdAt, Employee employee,
-                    List<TransactionItem> items, Supplier supplier) {
+    public Purchase(int id, Instant createdAt, Employee employee, List<TransactionItem> items,
+                    String bill, Supplier supplier) {
         super(id, createdAt, employee, items);
+        this.bill = bill;
         this.supplier = supplier;
+    }
+
+    public String getBill() {
+        return bill;
+    }
+
+    public void setBill(String bill) {
+        this.bill = bill;
     }
 
     public Supplier getSupplier() {

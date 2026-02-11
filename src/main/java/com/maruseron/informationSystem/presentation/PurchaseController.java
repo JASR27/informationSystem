@@ -1,7 +1,6 @@
 package com.maruseron.informationSystem.presentation;
 
 import com.maruseron.informationSystem.application.*;
-import com.maruseron.informationSystem.application.dto.ProductDetailDTO;
 import com.maruseron.informationSystem.application.dto.PurchaseDTO;
 import com.maruseron.informationSystem.application.dto.TransactionItemDTO;
 import com.maruseron.informationSystem.domain.entity.Purchase;
@@ -45,7 +44,9 @@ public class PurchaseController implements
     @Override
     @PostMapping
     public ResponseEntity<?> create(@RequestBody PurchaseDTO.Create req) throws URISyntaxException {
-        record Zip(List<PurchaseDTO.StockDescriptor> descriptors, Either<PurchaseDTO.Read, HttpResult> result) {}
+        record Zip(
+                List<PurchaseDTO.StockDescriptor> descriptors,
+                Either<PurchaseDTO.Read, HttpResult> result) {}
         return Controllers.handleResult(
                 // purchase pre-validation to avoid cases where the creation of items would be
                 // valid even with a faulty purchase, leading to them getting saved to the
